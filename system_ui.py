@@ -113,7 +113,7 @@ class MainWindow(qtw.QWidget):
         self.menue_btn.setStyleSheet(self.menue_btn_style())
         self.menue_btn.clicked.connect(self.menue_btn_fun)
         self.top_frame_label = qtw.QLabel()
-        self.top_frame_label.setStyleSheet("QLabel{color:white;font bold 14px;}")
+        self.top_frame_label.setStyleSheet("QLabel{color:white;font: bold 14px;}")
         self.top_frame_label.setText(self.main_pages[self.lang][0])
 
         #####################Home Page Buttons##############################
@@ -240,7 +240,7 @@ class MainWindow(qtw.QWidget):
         self.new_order_home_btn.clicked.connect(self.new_order_home_btn_fun)
 
         self.new_order_bar_label = qtw.QLabel()
-        self.new_order_bar_label.setStyleSheet("QLabel{color:white;font bold 14px;}")
+        self.new_order_bar_label.setStyleSheet("QLabel{color:white;font: bold 14px;}")
         self.new_order_bar_label.setText(self.new_order_pages[self.lang][0])
 
 
@@ -480,7 +480,7 @@ class MainWindow(qtw.QWidget):
         self.database_home_btn.clicked.connect(self.database_home_btn_fun)
 
         self.database_bar_label = qtw.QLabel()
-        self.database_bar_label.setStyleSheet("QLabel{color:white;font bold 15px;}")
+        self.database_bar_label.setStyleSheet("QLabel{color:white;font: bold 15px;}")
         self.database_bar_label.setText(self.database_pages[self.lang][0])
 
         self.sort_db_btn = qtw.QPushButton()
@@ -523,9 +523,9 @@ class MainWindow(qtw.QWidget):
         self.import_csv_cmb.addItems(l)
         self.export_csv_cmb.addItems(l)
         ####################Employees tabel ly##################
-        self.emp_tabel = qtw.QTableWidget(20, 6)
+        self.emp_tabel = qtw.QTableWidget(20, 5)
         self.emp_tabel.setHorizontalHeaderLabels(
-            ["Code", "Name", "Position", "Salary", "Total experience", "inside experience"])
+            ["Code", "Name", "Position", "Salary","hiring date"])
         self.emp_tabel.horizontalHeader().setStretchLastSection(True)
         self.emp_tabel.verticalHeader().setStretchLastSection(True)
 
@@ -555,9 +555,9 @@ class MainWindow(qtw.QWidget):
         self.save_exp.setStyleSheet(self.button_style())
         ##############imports###################
 
-        self.imp_tabel = qtw.QTableWidget(20, 8)
+        self.imp_tabel = qtw.QTableWidget(20, 9)
         self.imp_tabel.setHorizontalHeaderLabels(
-            ["supplier Name", "Email", "Address", "Link", "Products", "Cost", "Losses", "Date"])
+            ["supplier Name", "Email", "Address", "Link", "Products","process type", "Cost", "Losses", "Date"])
         self.imp_tabel.horizontalHeader().setStretchLastSection(True)
         self.imp_tabel.verticalHeader().setStretchLastSection(True)
 
@@ -570,6 +570,7 @@ class MainWindow(qtw.QWidget):
         self.save_imp = qtw.QPushButton("Save")
         self.save_imp.setStyleSheet(self.button_style())
         ##############Calculations#############
+
         self.calc_tabel = qtw.QTableWidget(20, 6)
         self.calc_tabel.setHorizontalHeaderLabels(
             ["Name", "type", "Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4"])
@@ -583,9 +584,14 @@ class MainWindow(qtw.QWidget):
         self.tot_tabel.setItem(2, 0, qtw.QTableWidgetItem("Quarter 3"))
         self.tot_tabel.setItem(3, 0, qtw.QTableWidgetItem("Quarter 4"))
         self.tot_tabel.setItem(4, 0, qtw.QTableWidgetItem("Annual"))
-
         self.tot_tabel.horizontalHeader().setStretchLastSection(True)
         self.tot_tabel.verticalHeader().setStretchLastSection(True)
+
+        self.annual_rent=qtw.QLabel()
+        self.annual_salaries=qtw.QLabel()
+        self.annual_rent.setStyleSheet("QLabel{color:white;font: bold 22px;}")
+        self.annual_salaries.setStyleSheet("QLabel{color:white;font: bold 22px;}")
+
         ####################add_employee page##################
         self.select_employee_type_label=qtw.QLabel("Enter process type")
         self.select_employee_type=qtw.QComboBox()
@@ -627,7 +633,7 @@ class MainWindow(qtw.QWidget):
         self.website = "http://esscegypt.com/"
         self.mobile = "P: 2005037440 M: 201129070766 / 201008003018 / 201280773379"
         self.n_employees = str(self.emp_tabel.rowCount())
-        self.rent = str(0)
+        self.rent = str(1000)
         self.description = "ESSC provides environmental and safety consulting services, too general supplies and contracting;\nwe offer these services to our clients not only for pollution control and protection place,\n but also for resource preservation.\n through cleaner production and adequate mitigation measures in design, operation,and proper management manners.      "
 
         self.info_name_label = qtw.QLabel("Name: ")
@@ -780,8 +786,9 @@ class MainWindow(qtw.QWidget):
         ###############################Data base functions#####################################
         self.get_stock()
         self.get_employees()
+        self.get_imports()
+        self.get_exports()
         self.update_cmb()
-
         #####################Set Layout function#####################################
         self.set_layout()
 
@@ -929,13 +936,104 @@ class MainWindow(qtw.QWidget):
                             self.my_cursor.execute(sql_stuff, (sell_price,name))
                         except:
                             pass
+            self.mydb.commit()
             self.get_stock()
             self.update_cmb()
             self.clear_buy_page_btn_fun()
+            self.get_imports()
+    def get_quarter_from_date(self,date):
+        my_list=['','Quarter 1','Quarter 1','Quarter 1','Quarter 2','Quarter 2','Quarter 2','Quarter 3','Quarter 3','Quarter 3','Quarter 4','Quarter 4','Quarter 4']
+        month=int(date.split('-')[-2])
+        return my_list[month]
+    def get_calc_by_client(self):
+        suppliers=dict()
+        clients=dict()
+
+        for code in list(self.imports_data.keys()):
+            name, email, address, link, products, process_type, cost, total, losses, date=self.imports_data[code]
+            quarter=self.get_quarter_from_date(date)
+            try:
+                suppliers[name][quarter]+=cost
+            except:
+                suppliers[name]={'Quarter 1':0,'Quarter 2':0,'Quarter 3':0,'Quarter 4':0}
+                suppliers[name][quarter]=cost
+        for code in list(self.exports_data.keys()):
+            code, name, email, address, link, products, cost, total, profit, losses, date=self.exports_data[code]
+            quarter=self.get_quarter_from_date(date)
+
+            try:
+                clients[name][quarter]+=cost
+            except:
+                clients[name]={'Quarter 1':0,'Quarter 2':0,'Quarter 3':0,'Quarter 4':0}
+                clients[name][quarter]=cost
+        return suppliers,clients
+
+    def populate_calculations_tabel(self):
+        suppliers, clients = self.get_calc_by_client()
+        if len(list(suppliers.keys())) + len(list(clients.keys())) > 0:
+            if len(list(suppliers.keys())) + len(list(clients.keys()))>self.calc_tabel.rowCount():
+                self.calc_tabel.setRowCount(len(list(suppliers.keys())) + len(list(clients.keys())))
+            ind = 0
+            for name in list(suppliers.keys()):
+                self.calc_tabel.setItem(ind, 0, qtw.QTableWidgetItem(name))
+
+                q1, q2, q3, q4 = list(suppliers[name].values())
+                self.calc_tabel.setItem(ind, 1, qtw.QTableWidgetItem('import'))
+                self.calc_tabel.setItem(ind, 2, qtw.QTableWidgetItem(str(q1)))
+                self.calc_tabel.setItem(ind, 3, qtw.QTableWidgetItem(str(q2)))
+                self.calc_tabel.setItem(ind, 4, qtw.QTableWidgetItem(str(q3)))
+                self.calc_tabel.setItem(ind, 5, qtw.QTableWidgetItem(str(q4)))
+                ind += 1
+            for name in list(clients.keys()):
+                self.calc_tabel.setItem(ind, 0, qtw.QTableWidgetItem(name))
+                self.calc_tabel.setItem(ind, 1, qtw.QTableWidgetItem('export'))
+                q1, q2, q3, q4 = list(clients[name].values())
+                self.calc_tabel.setItem(ind, 2, qtw.QTableWidgetItem(str(q1)))
+                self.calc_tabel.setItem(ind, 3, qtw.QTableWidgetItem(str(q2)))
+                self.calc_tabel.setItem(ind, 4, qtw.QTableWidgetItem(str(q3)))
+                self.calc_tabel.setItem(ind, 5, qtw.QTableWidgetItem(str(q4)))
+                ind += 1
+
+    def get_calc_col_vals(self,index):
+        cost=[]
+        earned=[]
+        for i in range(self.calc_tabel.rowCount()):
+            try:
+                if self.calc_tabel.item(i,1).text()=='import':
+                    cost.append(int(self.calc_tabel.item(i,index).text()))
+                else:
+                    earned.append(int(self.calc_tabel.item(i,index).text()))
+            except:
+                break
+        cost=sum(cost)
+        earned=sum(earned)
+        profit=earned-cost
+        return cost,earned,profit
 
 
+    def populate_total_calc_table(self):
+        tot_cost=0
+        total=0
+        tot_profit=0
+        for i in range(4):
+            cost,earned,profit=self.get_calc_col_vals(2+i)
+            tot_cost+=cost
+            total+=earned
+            tot_profit+=profit
+            self.tot_tabel.setItem(i,1,qtw.QTableWidgetItem(str(cost)))
+            self.tot_tabel.setItem(i,2,qtw.QTableWidgetItem(str(earned)))
+            self.tot_tabel.setItem(i,3,qtw.QTableWidgetItem(str(profit)))
+        self.tot_tabel.setItem(4, 0, qtw.QTableWidgetItem(str(tot_cost)))
+        self.tot_tabel.setItem(4 , 1, qtw.QTableWidgetItem(str(total)))
+        self.tot_tabel.setItem(4 , 2, qtw.QTableWidgetItem(str(tot_profit)))
+        tot_salary=0
+        for i in list(self.employee_data.keys()):
+            salary=int(self.employee_data[i][2])
+            tot_salary+=salary
+        self.annual_salaries.setText(f'Total salaries paid per year is  :   {tot_salary}')
+        self.annual_rent.setText(f'Total rent paid per year is  :   {int(self.rent)*12}')
 
-        self.mydb.commit()
+
     def add_btn_fun(self):
         data = []
         for i in range(self.package_tabel_current):
@@ -981,6 +1079,8 @@ class MainWindow(qtw.QWidget):
         self.my_cursor.execute("SELECT * FROM stock")
         data=self.my_cursor.fetchall()
         self.stock_data=dict()
+        if self.stock_tabel.rowCount()<len(data):
+            self.stock_tabel.setRowCount(len(data))
         for i,info in enumerate(data):
             prod,av,buy,sell,sold=info
             if sold is None:
@@ -992,6 +1092,48 @@ class MainWindow(qtw.QWidget):
             self.stock_tabel.setItem(i,2,qtw.QTableWidgetItem(str(buy)))
             self.stock_tabel.setItem(i,3,qtw.QTableWidgetItem(str(sell)))
             self.stock_tabel.setItem(i,4,qtw.QTableWidgetItem(str(sold)))
+    def get_exports(self):
+
+        self.my_cursor.execute("SELECT * FROM exports")
+        data = self.my_cursor.fetchall()
+        if self.exports_tabel.rowCount()<len(data):
+            self.exports_tabel.setRowCount(len(data))
+        self.exports_data = dict()
+        for i, info in enumerate(data):
+            code, name, email, address, link, products, cost, total,profit, losses, date = info
+            self.exports_data[str(code)] = [code, name, email, address, link, products, cost, total,profit, losses, date]
+
+            self.exports_tabel.setItem(i, 0, qtw.QTableWidgetItem(str(name)))
+            self.exports_tabel.setItem(i, 1, qtw.QTableWidgetItem(str(email)))
+            self.exports_tabel.setItem(i, 2, qtw.QTableWidgetItem(str(address)))
+            self.exports_tabel.setItem(i, 3, qtw.QTableWidgetItem(str(link)))
+            self.exports_tabel.setItem(i, 4, qtw.QTableWidgetItem(str(products)))
+            self.exports_tabel.setItem(i, 5, qtw.QTableWidgetItem(str(cost)))
+            self.exports_tabel.setItem(i, 6, qtw.QTableWidgetItem(str(profit)))
+            self.exports_tabel.setItem(i, 7, qtw.QTableWidgetItem(str(losses)))
+            self.exports_tabel.setItem(i, 8, qtw.QTableWidgetItem(str(date)))
+
+    def get_imports(self):
+        self.my_cursor.execute("SELECT * FROM imports")
+        data=self.my_cursor.fetchall()
+        if self.imp_tabel.rowCount()<len(data):
+            self.imp_tabel.setRowCount(len(data))
+        self.imports_data=dict()
+        for i,info in enumerate(data):
+            code,name,email,address,link,products,process_type,cost,total,losses,date=info
+            self.imports_data[str(code)]=[name,email,address,link,products,process_type,cost,total,losses,date]
+
+            self.imp_tabel.setItem(i,0,qtw.QTableWidgetItem(str(name)))
+            self.imp_tabel.setItem(i,1,qtw.QTableWidgetItem(str(email)))
+            self.imp_tabel.setItem(i,2,qtw.QTableWidgetItem(str(address)))
+            self.imp_tabel.setItem(i,3,qtw.QTableWidgetItem(str(link)))
+            self.imp_tabel.setItem(i,4,qtw.QTableWidgetItem(str(products)))
+            self.imp_tabel.setItem(i,5,qtw.QTableWidgetItem(str(process_type)))
+            self.imp_tabel.setItem(i,6,qtw.QTableWidgetItem(str(cost)))
+            self.imp_tabel.setItem(i,7,qtw.QTableWidgetItem(str(losses)))
+            self.imp_tabel.setItem(i,8,qtw.QTableWidgetItem(str(date)))
+
+
 
     def update_cmb(self):
         packages_list=list(self.packages_dict.keys())
@@ -1163,7 +1305,7 @@ class MainWindow(qtw.QWidget):
         self.set_lang()
     def sell_submit_btn_fun(self):
         qm = qtw.QMessageBox(self)
-        ret = qm.question(self, '', "Are you sure you want to save this import process", qm.Yes | qm.No)
+        ret = qm.question(self, '', "Are you sure you want to save this export process", qm.Yes | qm.No)
         if ret == qm.Yes:
             name=self.client_name.text()
             email=self.client_email.text()
@@ -1198,9 +1340,12 @@ class MainWindow(qtw.QWidget):
                         self.my_cursor.execute(sql_stuff,(prod_qt,name))
                     except:
                         pass
+
             self.mydb.commit()
+            self.clear_sell_page_btn_fun()
             self.get_stock()
             self.update_cmb()
+            self.get_exports()
     def add_emp_submit_btn_fn(self):
         qm = qtw.QMessageBox(self)
         ret = qm.question(self, '', "Are you sure you want to update employees info", qm.Yes | qm.No)
@@ -1244,11 +1389,20 @@ class MainWindow(qtw.QWidget):
             self.employee_data=dict()
             self.my_cursor.execute("SELECT * FROM employees")
             data=self.my_cursor.fetchall()
-            for emp in data:
-                code,name,position,salary,hire_date=emp
-                self.employee_data[str(code)]=[name,position,salary,hire_date]
+            if self.emp_tabel.rowCount()<len(data):
+                self.emp_tabel.setRowCount(len(data))
+            for i,emp in enumerate(data):
+                code,name,position,salary,hiring_date=emp
+                self.employee_data[str(code)]=[name,position,salary,hiring_date]
+                self.emp_tabel.setItem(i,0,qtw.QTableWidgetItem(str(code)))
+                self.emp_tabel.setItem(i,1,qtw.QTableWidgetItem(str(name)))
+                self.emp_tabel.setItem(i,2,qtw.QTableWidgetItem(str(position)))
+                self.emp_tabel.setItem(i,3,qtw.QTableWidgetItem(str(salary)))
+                self.emp_tabel.setItem(i,4,qtw.QTableWidgetItem(str(hiring_date)))
         except:
             pass
+
+
 
 
     def create_db(self, name):
@@ -1407,6 +1561,8 @@ class MainWindow(qtw.QWidget):
         if self.current_type == "manger" or self.current_type == "admin":
             self.main_ly.setCurrentIndex(3)
             self.top_frame_label.setText(self.main_pages[self.lang][3])
+            self.populate_calculations_tabel()
+            self.populate_total_calc_table()
 
     def info_btn_fun(self):
         self.main_ly.setCurrentIndex(4)
@@ -1426,6 +1582,8 @@ class MainWindow(qtw.QWidget):
         self.database_ly.setCurrentIndex(2)
         self.database_bar_label.setText(self.database_pages[self.lang][2])
         self.count = 2
+        self.populate_calculations_tabel()
+        self.populate_total_calc_table()
         self.update_cmb()
     def imports_btn_fun(self):
         self.database_ly.setCurrentIndex(3)
@@ -1444,7 +1602,6 @@ class MainWindow(qtw.QWidget):
         self.database_bar_label.setText(self.database_pages[self.lang][0])
         self.count = 0
         self.update_cmb()
-        self.update_cmb()
     def back_btn_fun(self):
         if (self.count >= 1):
             self.count -= 1
@@ -1453,6 +1610,9 @@ class MainWindow(qtw.QWidget):
         self.database_ly.setCurrentIndex(self.count)
         self.database_bar_label.setText(self.database_pages[self.lang][self.count])
         self.update_cmb()
+        if self.database_ly.currentIndex()==2:
+            self.populate_calculations_tabel()
+            self.populate_total_calc_table()
     def forward_btn_fun(self):
         if (self.count < 4):
             self.count += 1
@@ -1460,7 +1620,9 @@ class MainWindow(qtw.QWidget):
             self.count = 0
         self.database_ly.setCurrentIndex(self.count)
         self.database_bar_label.setText(self.database_pages[self.lang][self.count])
-
+        if self.database_ly.currentIndex()==2:
+            self.populate_calculations_tabel()
+            self.populate_total_calc_table()
         self.update_cmb()
 
     def Buy_btn_fun(self):
@@ -1728,6 +1890,9 @@ class MainWindow(qtw.QWidget):
         self.calc_ly.addWidget(self.calc_tabel)
         # self.calc_ly.addStretch()
         self.calc_ly.addWidget(self.tot_tabel)
+        self.calc_ly.addStretch()
+        self.calc_ly.addWidget(self.annual_rent)
+        self.calc_ly.addWidget(self.annual_salaries)
         self.calc_ly.addStretch()
         self.calc_widget.setLayout(self.calc_ly)
 
@@ -2345,15 +2510,15 @@ class MainWindow(qtw.QWidget):
         return """QPushButton{ border-radius:25px;min-width:50px;min-height:50px;}"""
 
     def apply_dark_mode(self, ):
-        self.settings_bar_label.setStyleSheet("QLabel{color:white;font bold 15px;}")
+        self.settings_bar_label.setStyleSheet("QLabel{color:white;font: bold 15px;}")
         self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
         self.change_password_widget.setStyleSheet(self.main_widgets_style())
 
         self.create_acc_widget.setStyleSheet(self.main_widgets_style())
         self.settings_bar_frame.setStyleSheet(
             """QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:"""+self.dark_theme+""";min-height:50px;}""")
-        self.database_bar_label.setStyleSheet("QLabel{color:white;font bold 15px;}")
-        self.top_frame_label.setStyleSheet("QLabel{color:white;font bold 15px;}")
+        self.database_bar_label.setStyleSheet("QLabel{color:white;font: bold 15px;}")
+        self.top_frame_label.setStyleSheet("QLabel{color:white;font: bold 15px;}")
         self.import_csv_cmb.setStyleSheet(self.cmb_style())
         self.export_csv_cmb.setStyleSheet(self.cmb_style())
         self.add_emp_page_widget.setStyleSheet(self.main_widgets_style())
@@ -2369,7 +2534,7 @@ class MainWindow(qtw.QWidget):
             "QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:" + self.dark_theme + ";min-height:50px;}")
         self.new_order_bar.setStyleSheet(
             "QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:" + self.dark_theme + ";min-height:50px;}")
-        self.new_order_bar_label.setStyleSheet("QLabel{color:white;font bold 14px;}")
+        self.new_order_bar_label.setStyleSheet("QLabel{color:white;font: bold 14px;}")
         self.username_in.setStyleSheet(self.line_edit_style())
         self.password_in.setStyleSheet(self.line_edit_style())
         # self.setStyleSheet("background-color:white;")
@@ -2395,14 +2560,14 @@ class MainWindow(qtw.QWidget):
         self.repaint()
 
     def apply_light_mode(self):
-        self.settings_bar_label.setStyleSheet("QLabel{color:black;font bold 15px;}")
+        self.settings_bar_label.setStyleSheet("QLabel{color:black;font: bold 15px;}")
         self.change_password_widget.setStyleSheet(self.main_widgets_light_style())
         self.create_acc_widget.setStyleSheet(self.main_widgets_light_style())
         self.settings_bar_frame.setStyleSheet(
             "QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:" + self.light_theme + ";min-height:50px;}")
         self.Settings_widget.setStyleSheet(self.home_page_btn_style_light())
-        self.database_bar_label.setStyleSheet("QLabel{color:black;font bold 15px;}")
-        self.top_frame_label.setStyleSheet("QLabel{color:black;font bold 15px;}")
+        self.database_bar_label.setStyleSheet("QLabel{color:black;font: bold 15px;}")
+        self.top_frame_label.setStyleSheet("QLabel{color:black;font: bold 15px;}")
 
         self.import_csv_cmb.setStyleSheet(self.cmb_style_light())
         self.export_csv_cmb.setStyleSheet(self.cmb_style_light())
@@ -2423,7 +2588,7 @@ class MainWindow(qtw.QWidget):
             "QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:" + self.light_theme + ";min-height:50px;}")
         self.new_order_bar.setStyleSheet(
             "QFrame{border-radius:5px;border-width:0px;border-style:outset;background-color:" + self.light_theme + ";min-height:50px;}")
-        self.new_order_bar_label.setStyleSheet("QLabel{color:black;font bold 14px;}")
+        self.new_order_bar_label.setStyleSheet("QLabel{color:black;font: bold 14px;}")
         self.username_in.setStyleSheet(self.line_edit_style_light())
         self.password_in.setStyleSheet(self.line_edit_style_light())
         self.setStyleSheet("background-color:white;")
@@ -2541,7 +2706,7 @@ class MainWindow(qtw.QWidget):
         self.export_csv_cmb.addItems(l)
 
         self.emp_tabel.setHorizontalHeaderLabels(
-            ["Code", "Name", "Position", "Salary", "Total experience", "inside experience"])
+            ["Code", "Name", "Position", "Salary","hiring date"])
         self.add_emp.setText("Add")
         self.remove_emp.setText("remove")
         self.save_emp.setText("Save")
@@ -2551,7 +2716,7 @@ class MainWindow(qtw.QWidget):
         self.remove_exp.setText("remove")
         self.save_exp.setText("Save")
         self.imp_tabel.setHorizontalHeaderLabels(
-            ["supplier Name", "Email", "Address", "Link", "Products", "Cost", "Losses", "Date"])
+            ["supplier Name", "Email", "Address", "Link", "Products","process type", "Cost", "Losses", "Date"])
         self.add_imp.setText("Add")
         self.remove_imp.setText("remove")
 
@@ -2564,6 +2729,8 @@ class MainWindow(qtw.QWidget):
         self.tot_tabel.setItem(2, 0, qtw.QTableWidgetItem("Quarter 3"))
         self.tot_tabel.setItem(3, 0, qtw.QTableWidgetItem("Quarter 4"))
         self.tot_tabel.setItem(4, 0, qtw.QTableWidgetItem("Annual"))
+
+
         self.address = "Smouha Sidi Gaber Alexandria, Egypt."
         self.description = "ESSC provides environmental and safety consulting services, too general supplies and contracting;\nwe offer these services to our clients not only for pollution control and protection place,\n but also for resource preservation.\n through cleaner production and adequate mitigation measures in design, operation,and proper management manners.      "
 
@@ -2619,7 +2786,6 @@ class MainWindow(qtw.QWidget):
         self.add_emp_position_label.setAlignment(qtc.Qt.AlignLeft)
         self.add_emp_name_label.setAlignment(qtc.Qt.AlignLeft)
         self.add_emp_salary_label.setAlignment(qtc.Qt.AlignLeft)
-        self.add_emp_exp_label.setAlignment(qtc.Qt.AlignLeft)
         self.package_name_label.setAlignment(qtc.Qt.AlignLeft)
         self.add_product_to_package_label.setAlignment(qtc.Qt.AlignLeft)
         self.supplier_name_s_label.setAlignment(qtc.Qt.AlignLeft)
@@ -2679,7 +2845,6 @@ class MainWindow(qtw.QWidget):
         self.add_emp_position_label.setText("ادخل منصب الموظف")
         self.add_emp_name_label.setText("ادخل اسم الموظف")
         self.add_emp_salary_label.setText("ادخل راتب الموظف")
-        self.add_emp_exp_label.setText("ادخل عدد سنين خبرة الموظف")
 
         self.edit_company_rent_label.setText("ادخل ايجار الشركة")
         self.package_name_label.setText("اسم المجموعة")
@@ -2754,7 +2919,7 @@ class MainWindow(qtw.QWidget):
         self.export_csv_cmb.addItems(l)
 
         self.emp_tabel.setHorizontalHeaderLabels(
-            ["كود الموظف", "اسم الموظف", "منصبه", "المرتب", "خبرة الموظف", "خبرة الموظف في الشركة"])
+            ["كود الموظف", "اسم الموظف", "منصبه", "المرتب", "تاريخ التعيين"])
         self.add_emp.setText("اضف")
         self.remove_emp.setText("ازالة")
         self.save_emp.setText("حفظ")
@@ -2764,7 +2929,7 @@ class MainWindow(qtw.QWidget):
         self.remove_exp.setText("ازالة")
         self.save_exp.setText("حفظ")
         self.imp_tabel.setHorizontalHeaderLabels(
-            ["اسم المورد", "البريد", "العنوان", "الرابط", "المنتجات", "التكلفة", "الخسارة", "التاريخ"])
+            ["اسم المورد", "البريد", "العنوان", "الرابط", "المنتجات","نوع العملية", "التكلفة", "الخسارة", "التاريخ"])
         self.add_imp.setText("اضف")
         self.remove_imp.setText("ازالة")
 
@@ -2834,7 +2999,6 @@ class MainWindow(qtw.QWidget):
         self.add_emp_position_label.setAlignment(qtc.Qt.AlignRight)
         self.add_emp_name_label.setAlignment(qtc.Qt.AlignRight)
         self.add_emp_salary_label.setAlignment(qtc.Qt.AlignRight)
-        self.add_emp_exp_label.setAlignment(qtc.Qt.AlignRight)
         self.package_name_label.setAlignment(qtc.Qt.AlignRight)
         self.add_product_to_package_label.setAlignment(qtc.Qt.AlignRight)
         self.supplier_name_s_label.setAlignment(qtc.Qt.AlignRight)
